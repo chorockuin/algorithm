@@ -3,41 +3,46 @@ from typing import List
 class Solution:
     max_p = -10*2*10**4
     
-    def calc_max(self, memo, nums):
-        if len(memo) == 0:
-            return
-        for i, m in enumerate(memo):
-            self.max_p = max(m, self.max_p)
-            memo[i] = m//nums[0]
-        self.calc_max(memo[1:], nums[1:])
+    # def calc_max(self, memo, nums):
+    #     if len(memo) == 0:
+    #         return
+    #     for i, m in enumerate(memo):
+    #         self.max_p = max(m, self.max_p)
+    #         memo[i] = m//nums[0]
+    #     self.calc_max(memo[1:], nums[1:])
         
-    def split_nums(self, nums):
-        s_nums = []
-        s = []
+    def split_nums_by_no_zero(self, nums):
+        no_zero_nums_array = []
+        no_zero_nums = []
         for n in nums:
             if n != 0:
-                s.append(n)
+                no_zero_nums.append(n)
             else:
-                s_nums.append(s)
-                s = []
-        s_nums.append(s)
-        return s_nums
+                no_zero_nums_array.append(no_zero_nums)
+                no_zero_nums = []
+        no_zero_nums_array.append(no_zero_nums)
+        return no_zero_nums_array
     
-    def calc(self, nums):
+    def calc(self, no_zero_nums):
         memo = []
-        for i, n in enumerate(nums):
+        for i, n in enumerate(no_zero_nums):
             if i > 0:
+                self.max_p = max(self.max_p, memo[i-1] * n)
                 memo.append(memo[i-1] * n)
             else:
+                self.max_p = max(self.max_p, n)
                 memo.append(n)
-        self.calc_max(memo, nums)
-                
+
     def maxProduct(self, nums: List[int]) -> int:
-        s_nums = self.split_nums(nums)
-        for ns in s_nums:
-            self.calc(ns)
-        if (len(s_nums) > 1):
+        no_zero_nums_array = self.split_nums_by_no_zero(nums)
+        
+        for no_zero_nums in no_zero_nums_array:
+            self.calc(no_zero_nums)
+            self.calc(reversed(no_zero_nums))
+            
+        if (len(no_zero_nums_array) > 1):
             return max(0, self.max_p)
+        
         return self.max_p
 
 print(Solution().maxProduct([2,3,-2,4]))
