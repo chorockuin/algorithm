@@ -14,6 +14,6 @@ class Solution:
         sorted_s = sorted(ordered_s, key=lambda x: x[1])
         return ''.join(map(str, list(map(lambda x: x[0], sorted_s))))
 
-print(Solution().customSortString("cba", "abcd")) # cbad
-print(Solution().customSortString("cbafg", "abcd")) # cbad
-print(Solution().customSortString("kqep", "pekeq"))
+assert Solution().customSortString("cba", "abcd") == "cbad"
+assert Solution().customSortString("cbafg", "abcd") == "cbad"
+assert Solution().customSortString("kqep", "pekeq") == "kqeep"
