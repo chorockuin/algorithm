@@ -8,11 +8,10 @@ class Solution:
         for i, water_plant in enumerate(plants):
             if water_can < water_plant:
                 water_can = capacity
-                x += distance * 2
+                distance += i * 2
             water_can -= water_plant
             distance += 1
-            x += 1
-        return x
+        return distance
 
 print(Solution().wateringPlants([2,2,3,3], 5)) # 14
 print(Solution().wateringPlants([1,1,1,4,2,3], 4)) # 30
