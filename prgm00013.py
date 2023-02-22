@@ -78,19 +78,18 @@ def solution(k, d):
         ys.append(i)
     xs = xs[::-1]
     xs_len = len(xs)
-    center_xi = 0
-    for i, x in enumerate(xs):
-        if x**2 + x**2 <= d**2:
-            center_xi = i
-            break
-    center = (xs_len-center_xi)*(xs_len-center_xi)
-    side = 0
-    for yi in range(0, xs_len-center_xi):
-        for xi in range(0, center_xi):
-            if xs[xi]**2 + ys[yi]**2 <= d**2:
-                side += 1
-    answer = side * 2 + center
-    return answer
+    ys_len = len(ys)
+
+    count = 0
+    yi = 0
+    xi = 0
+    while xi < xs_len and yi < ys_len:
+        if xs[xi]**2 + ys[yi]**2 <= d**2:
+            count += xs_len-xi
+            yi += 1
+        else:
+            xi += 1
+    return count
 
 print(solution(2,4)) # 6
 print(solution(1,5)) # 26
