@@ -1,36 +1,24 @@
-# def solution(order):
-#     order_i = 0
-#     conveyor_order = [i+1 for i in range(len(order))]
-#     stack = []
-#     while True:
-#         if len(stack) > 0 and order[order_i] == stack[-1]:
-#             stack.pop()
-#             order_i += 1
-#         else:
-#             if len(conveyor_order) == 0:
-#                 return order_i
-#             stack.append(conveyor_order.pop(0))
-#     return order_i
-
-def solution(order):
-    stack = []
-    convy_i = 0
-    i = 0
-    while i < len(order):
-        if len(stack) > 0:
-            if stack[-1] == order[i]:
-                stack.pop(-1)
-                i += 1
-            elif stack[-1] > order[i]:
-                return i
-            else:
-                convy_i += 1
-                stack.append(convy_i)
+def cantor(n, bits):
+    if n == 0:
+        return bits
+    
+    bits_len = len(bits)
+    for i in range(bits_len):
+        if bits[i] == '1':
+            bits += '11011'
         else:
-            convy_i += 1
-            stack.append(convy_i)
-    return i
+            bits += '00000'
+    bits = bits[bits_len:]
+    n -= 1
+    return cantor(n, bits)
 
-print(solution([3, 4, 5, 1, 2])) # 3
-print(solution([4, 3, 1, 2, 5])) # 2
-print(solution([5, 4, 3, 2, 1])) # 5
+def solution(n, l, r):
+    answer = 0
+    bits = "1"
+    bits = cantor(n, bits)
+    bits = bits[l-1:r]
+    for bit in bits:
+        answer += int(bit)
+    return answer
+
+print(solution(2, 4, 17)) # 8
