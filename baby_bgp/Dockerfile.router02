@@ -1,0 +1,37 @@
+# Ubuntu 20.04 이미지를 베이스로 사용
+FROM ubuntu:20.04
+
+# 비대화식 모드 설정 (apt 설치 시 사용자 입력 방지)
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 필요한 패키지 설치
+RUN apt-get update && apt-get install -y \
+    bird \              # BGP 라우팅 데몬 (BIRD)
+    iproute2 \          # 네트워크 인터페이스/라우팅 설정 도구 (예: ip 명령어)
+    tcpdump \           # 패킷 캡처 도구 (네트워크 트래픽 분석용)
+    openssh-server \    # SSH 서버 (외부에서 접속 가능하도록 함)
+    iputils-ping \      # ping 명령어 (네트워크 연결 확인용)
+    && rm -rf /var/lib/apt/lists/*  # 캐시 파일 제거로 이미지 크기 최소화
+
+# 시작 스크립트 복사 및 실행 권한 부여
+COPY ./router02.sh /start.sh  # 호스트의 router02.sh를 컨테이너로 복사
+RUN chmod +x /start.sh        # 시작 스크립트 실행 가능하도록 권한 설정
+
+# SSH 데몬이 사용하는 런타임 디렉토리 생성
+RUN mkdir /var/run/sshd
+
+# BIRD 라우팅 데몬이 사용하는 디렉토리 생성
+RUN mkdir -p /run/bird
+
+# root 계정 비밀번호 설정
+RUN echo 'root:dreamhack1234!' | chpasswd  # root 사용자에 비밀번호 설정
+
+# SSH 접속 허용 설정 (PermitRootLogin 옵션 활성화)
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+# 기본적으로 root 접속이 막혀 있으므로 위 설정을 통해 비밀번호로 root 로그인 허용
+
+# SSH 포트(22)와 BGP 포트(179)를 외부에 노출
+EXPOSE 22 179
+
+# 컨테이너 시작 시 실행할 스크립트 지정 (ENTRYPOINT는 CMD보다 우선함)
+ENTRYPOINT ["/start.sh"]

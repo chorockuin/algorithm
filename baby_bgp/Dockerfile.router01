@@ -1,0 +1,35 @@
+# 베이스 이미지로 Ubuntu 20.04 사용
+FROM ubuntu:20.04
+
+# 비대화식(non-interactive) 환경 설정: apt 설치 중 질문 방지
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 필수 패키지 설치
+RUN apt-get update && apt-get install -y \
+    bird \             # BGP 라우팅 데몬 (BIRD Internet Routing Daemon)
+    iproute2 \         # ip 명령어 포함 (네트워크 설정용)
+    python3 \          # Python 3 설치
+    python3-pip \      # pip (Python 패키지 매니저)
+    libtinfo6 \        # 터미널 인터페이스 라이브러리 (예: BIRD 실행 시 필요할 수 있음)
+    libreadline8 \     # 입력 보조 라이브러리 (예: readline 지원 프로그램)
+    libssh-4 \         # SSH 라이브러리 (네트워크 기능 시 필요할 수 있음)
+    && rm -rf /var/lib/apt/lists/*  # 캐시 삭제로 이미지 용량 줄이기
+
+# BIRD가 사용하는 런타임 디렉토리 생성
+RUN mkdir -p /run/bird
+
+# 시작 스크립트 및 보조 파이썬 스크립트 복사
+COPY ./router01.sh /start.sh  # 호스트의 router01.sh를 컨테이너 내 /start.sh로 복사
+COPY ./send.py /send.py       # 파이썬으로 작성된 네트워크 전송 스크립트
+
+# Python 패키지 설치 (scapy: 패킷 생성 및 분석 / netifaces: 네트워크 인터페이스 정보)
+RUN pip install scapy netifaces
+
+# BGP 기본 포트 (179) 외부 노출
+EXPOSE 179
+
+# 시작 스크립트 실행 권한 부여
+RUN chmod +x /start.sh
+
+# 컨테이너가 시작되면 /start.sh 실행
+CMD ["/start.sh"]
