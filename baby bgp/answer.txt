@@ -1,0 +1,10 @@
+ssh 22번 포트로 접속하라고 했으므로, 22번 포트를 열어놓은 컨테이너를 찾아야 함.
+docker-compose.yaml을 보면 router02가 22번 포트를 열어놓은 것을 확인할 수 있음.
+문제에서 16712번 포트가 22번 포트에 매핑되어 있다고 했으므로, 아래와 같이 router02 컨테이너 접속
+ssh root@host3.dreamhack.games -p 16712
+router01.sh와 send.py 소스코드를 살펴보면 route01에서 route02로 계속 tcp sync를 던지고 있고, tcp sync에 우리가 찾아야하는 FLAG 값이 있음
+따라서 route02 에서는 들어오는 tcp sync를 캡쳐해서 그 안에 FLAG 값을 보면 됨
+tcpdump -i eth0 -nn -s 0 -A port 179
+아래와 같이 캡쳐된 tcp sync 안에서 FLAG 값을 확인할 수 있음
+00:56:21.026301 IP 192.168.0.3.33117 > 192.168.0.4.179: Flags [S], seq 0:22, win 8192, length 22: BGP
+E..>....@..a.........]..........P. .._..DH{w4s_Bgp_Nec35sarY?}
