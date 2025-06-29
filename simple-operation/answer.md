@@ -155,6 +155,7 @@ Program Headers:
    11
    12     .init_array .fini_array .dynamic .got
 ```
+끄덕 끄덕
 
 ```bash
 readelf -S chall          # 섹션 리스트 확인
@@ -232,6 +233,45 @@ Key to Flags:
   C (compressed), x (unknown), o (OS specific), E (exclude),
   D (mbind), l (large), p (processor specific)
 ```
+0–10: 초기 정보, 동적 링킹 메타데이터
+    .interp	동적 링커 경로 (/lib64/ld-linux-x86-64.so.2)
+    .note.gnu.property	GNU 툴체인이 사용하는 보안 속성 정보 (e.g., IBT, SHSTK)
+    .note.gnu.build-id	빌드 ID (디버깅용 해시값)
+    .note.ABI-tag	실행 환경(ABI) 정보
+    .gnu.hash	GNU 해시 테이블 (동적 링커용)
+    .dynsym	동적 심볼 테이블 (.so 함수 등의 참조 정보)
+    .dynstr	.dynsym과 연결된 심볼 이름 문자열 테이블
+    .gnu.version	심볼 버전 정보 (VERSYM)
+    .gnu.version_r	필요한 외부 라이브러리들의 버전 요구 사항 (VERNEED)
+    .rela.dyn	동적 재배치 테이블 (주소 패치 필요 정보)
+    .rela.plt	PLT 항목에 대한 재배치 정보
+
+12–17: 코드 실행 관련 섹션
+    .init	main() 실행 전 호출되는 초기화 코드
+    .plt	PLT(Procedure Linkage Table) 동적 함수 호출 트램펄린(중간 다리)
+    .plt.got	GOT(Global Offset Table: 외부 함수/데이터의 실제 주소 저장소)와 연계된 PLT 엔트리
+    .plt.sec	보안 강화된 .plt (PIE/RELRO용)
+    .text	프로그램의 실행 코드 (기계어)
+    .fini	프로그램 종료 시 실행되는 정리 코드
+
+18–20: 읽기 전용 데이터, 예외 처리 정보
+    .rodata	읽기 전용 데이터 (상수 문자열 등)
+    .eh_frame_hdr	예외 처리 프레임의 헤더
+    .eh_frame	예외 처리 프레임 정보 (스택 언와인딩용)
+
+21–26: 런타임 초기화/정리 및 전역 데이터
+    .init_array	main() 실행 전 호출될 함수 리스트 (배열)
+    .fini_array	main() 종료 후 호출될 함수 리스트
+    .dynamic	동적 링커가 사용하는 정보 테이블
+    .got	Global Offset Table. 동적 함수나 변수 주소가 들어감
+    .data	초기화된 전역 변수, 정적 변수
+    .bss	초기화되지 않은 전역/정적 변수 (실제로는 디스크 공간 안 씀)
+
+27–30: 디버깅 및 심볼 관련
+    .comment	컴파일러 정보 주석 (예: "GCC: (Ubuntu...")
+    .symtab	    정적 심볼 테이블 (디버깅용)
+    .strtab	    .symtab에 대응하는 심볼 이름 문자열 테이블
+    .shstrtab	섹션 이름 문자열 테이블 (섹션 헤더들이 섹션 이름을 여기서 참조)
 
 ```bash
 readelf -s chall          # 모든 심볼 확인
@@ -311,6 +351,12 @@ Symbol table '.symtab' contains 50 entries:
     48: 0000000000000000     0 FUNC    WEAK   DEFAULT  UND __cxa_finalize@G[...]
     49: 0000000000001000     0 FUNC    GLOBAL HIDDEN    12 _init
 ```
+심볼 종류
+    함수:	main, printf	함수의 이름과 위치를 가리키는 심볼
+    전역 변수:	counter	프로그램 전체에서 접근 가능한 변수
+    외부 심볼:	puts, malloc	다른 라이브러리에서 제공되는 함수나 변수
+    파일 심볼:	.c 파일 이름 등	디버깅을 위한 정보
+    섹션 심볼:	.text, .data 등	ELF 내부의 구조 정보
 
 ```bash
 readelf -x .text chall    # .text 섹션의 기계어 코드 확인
@@ -578,66 +624,66 @@ Disassembly of section .text:
     133e:       c3                      ret
 
 000000000000133f <main>:
-    133f:       f3 0f 1e fa             endbr64
-    1343:       55                      push   %rbp
-    1344:       48 89 e5                mov    %rsp,%rbp
-    1347:       48 83 ec 40             sub    $0x40,%rsp
-    134b:       c7 45 dc 00 00 00 00    movl   $0x0,-0x24(%rbp)
-    1352:       c7 45 d8 00 00 00 00    movl   $0x0,-0x28(%rbp)
-    1359:       c7 45 f8 00 00 00 00    movl   $0x0,-0x8(%rbp)
-    1360:       b8 00 00 00 00          mov    $0x0,%eax
-    1365:       e8 1f ff ff ff          call   1289 <initialize>
-    136a:       bf 45 00 00 00          mov    $0x45,%edi
-    136f:       e8 dc fd ff ff          call   1150 <malloc@plt>
-    1374:       48 89 45 f0             mov    %rax,-0x10(%rbp)
-    1378:       be 00 00 00 00          mov    $0x0,%esi
-    137d:       48 8d 05 8d 0c 00 00    lea    0xc8d(%rip),%rax        # 2011 <_IO_stdin_used+0x11>
-    1384:       48 89 c7                mov    %rax,%rdi
-    1387:       b8 00 00 00 00          mov    $0x0,%eax
-    138c:       e8 df fd ff ff          call   1170 <open@plt>
-    1391:       89 45 ec                mov    %eax,-0x14(%rbp)
-    1394:       48 8b 4d f0             mov    -0x10(%rbp),%rcx
-    1398:       8b 45 ec                mov    -0x14(%rbp),%eax
-    139b:       ba 45 00 00 00          mov    $0x45,%edx
-    13a0:       48 89 ce                mov    %rcx,%rsi
-    13a3:       89 c7                   mov    %eax,%edi
-    13a5:       e8 86 fd ff ff          call   1130 <read@plt>
-    13aa:       8b 45 ec                mov    -0x14(%rbp),%eax
-    13ad:       89 c7                   mov    %eax,%edi
-    13af:       e8 6c fd ff ff          call   1120 <close@plt>
-    13b4:       48 8d 45 d8             lea    -0x28(%rbp),%rax
-    13b8:       48 89 c7                mov    %rax,%rdi
-    13bb:       e8 10 ff ff ff          call   12d0 <get_rand_num>
-    13c0:       8b 45 d8                mov    -0x28(%rbp),%eax
-    13c3:       89 c6                   mov    %eax,%esi
-    13c5:       48 8d 05 4c 0c 00 00    lea    0xc4c(%rip),%rax        # 2018 <_IO_stdin_used+0x18>
-    13cc:       48 89 c7                mov    %rax,%rdi
-    13cf:       b8 00 00 00 00          mov    $0x0,%eax
-    13d4:       e8 27 fd ff ff          call   1100 <printf@plt>
-    13d9:       48 8d 05 4c 0c 00 00    lea    0xc4c(%rip),%rax        # 202c <_IO_stdin_used+0x2c>
+    133f:       f3 0f 1e fa             endbr64                          # CET (Control-flow Enforcement Technology)용 명령어. 보안용 엔트리 포인트 마커.
+    1343:       55                      push   %rbp                      # 현재 베이스 포인터(%rbp)를 스택에 저장
+    1344:       48 89 e5                mov    %rsp,%rbp                 # 스택 포인터를 베이스 포인터로 설정 (스택 프레임 설정)
+    1347:       48 83 ec 40             sub    $0x40,%rsp                # 지역 변수 공간 확보 (스택 64바이트 할당)
+    134b:       c7 45 dc 00 00 00 00    movl   $0x0,-0x24(%rbp)          # 지역 변수 -0x24(offset) 위치에 0 저장
+    1352:       c7 45 d8 00 00 00 00    movl   $0x0,-0x28(%rbp)          # 지역 변수 -0x28 위치에 0 저장
+    1359:       c7 45 f8 00 00 00 00    movl   $0x0,-0x8(%rbp)           # 지역 변수 -0x8 위치에 0 저장
+    1360:       b8 00 00 00 00          mov    $0x0,%eax                 # %eax = 0 (관례적으로 main 함수에서 반환값 초기화)
+    1365:       e8 1f ff ff ff          call   1289 <initialize>         # initialize 함수 호출 (버퍼 설정용 함수로 추정)
+    136a:       bf 45 00 00 00          mov    $0x45,%edi                # malloc의 인자로 크기 0x45(69) 설정
+    136f:       e8 dc fd ff ff          call   1150 <malloc@plt>         # 메모리 동적 할당
+    1374:       48 89 45 f0             mov    %rax,-0x10(%rbp)          # 반환된 포인터를 -0x10 위치에 저장
+    1378:       be 00 00 00 00          mov    $0x0,%esi                 # %esi = 0
+    137d:       48 8d 05 8d 0c 00 00    lea    0xc8d(%rip),%rax        # 2011 <_IO_stdin_used+0x11> # 문자열 주소 계산 (파일 이름)
+    1384:       48 89 c7                mov    %rax,%rdi                 # 첫 번째 인자 (%rdi)로 파일 경로 전달
+    1387:       b8 00 00 00 00          mov    $0x0,%eax                 # %eax = 0
+    138c:       e8 df fd ff ff          call   1170 <open@plt>           # 파일 열기
+    1391:       89 45 ec                mov    %eax,-0x14(%rbp)          # 반환된 파일 디스크립터를 -0x14에 저장
+    1394:       48 8b 4d f0             mov    -0x10(%rbp),%rcx          # malloc으로 할당된 버퍼 주소를 %rcx로 로드
+    1398:       8b 45 ec                mov    -0x14(%rbp),%eax          # 파일 디스크립터 로드
+    139b:       ba 45 00 00 00          mov    $0x45,%edx                # 읽을 크기 (69 바이트)
+    13a0:       48 89 ce                mov    %rcx,%rsi                 # 두 번째 인자: 버퍼 주소
+    13a3:       89 c7                   mov    %eax,%edi                 # 첫 번째 인자: 파일 디스크립터
+    13a5:       e8 86 fd ff ff          call   1130 <read@plt>           # read(fd, buf, size)
+    13aa:       8b 45 ec                mov    -0x14(%rbp),%eax          # fd 다시 가져옴
+    13ad:       89 c7                   mov    %eax,%edi                 # 첫 번째 인자 설정
+    13af:       e8 6c fd ff ff          call   1120 <close@plt>          # close(fd)
+    13b4:       48 8d 45 d8             lea    -0x28(%rbp),%rax          # 지역 변수 주소 계산
+    13b8:       48 89 c7                mov    %rax,%rdi                 # get_rand_num 함수 인자 설정
+    13bb:       e8 10 ff ff ff          call   12d0 <get_rand_num>       # 랜덤값을 해당 주소에 저장
+    13c0:       8b 45 d8                mov    -0x28(%rbp),%eax          # 랜덤값 불러옴
+    13c3:       89 c6                   mov    %eax,%esi                 # printf 인자 설정 (두 번째 인자)
+    13c5:       48 8d 05 4c 0c 00 00    lea    0xc4c(%rip),%rax        # 2018 <_IO_stdin_used+0x18> # 문자열 포맷 주소 계산
+    13cc:       48 89 c7                mov    %rax,%rdi                 # 첫 번째 인자 설정
+    13cf:       b8 00 00 00 00          mov    $0x0,%eax                 # float 인자 개수 0 (변환용)
+    13d4:       e8 27 fd ff ff          call   1100 <printf@plt>         # printf(format, rand_value)
+    13d9:       48 8d 05 4c 0c 00 00    lea    0xc4c(%rip),%rax        # 202c <_IO_stdin_used+0x2c> # 다음 출력 문자열 주소 계산
     13e0:       48 89 c7                mov    %rax,%rdi
     13e3:       b8 00 00 00 00          mov    $0x0,%eax
-    13e8:       e8 13 fd ff ff          call   1100 <printf@plt>
-    13ed:       48 8d 45 dc             lea    -0x24(%rbp),%rax
-    13f1:       48 89 c6                mov    %rax,%rsi
-    13f4:       48 8d 05 39 0c 00 00    lea    0xc39(%rip),%rax        # 2034 <_IO_stdin_used+0x34>
+    13e8:       e8 13 fd ff ff          call   1100 <printf@plt>         # printf
+    13ed:       48 8d 45 dc             lea    -0x24(%rbp),%rax          # 사용자 입력 받을 변수 주소
+    13f1:       48 89 c6                mov    %rax,%rsi                 # 두 번째 인자 설정
+    13f4:       48 8d 05 39 0c 00 00    lea    0xc39(%rip),%rax        # 2034 <_IO_stdin_used+0x34> # 포맷 문자열 주소
     13fb:       48 89 c7                mov    %rax,%rdi
     13fe:       b8 00 00 00 00          mov    $0x0,%eax
-    1403:       e8 78 fd ff ff          call   1180 <__isoc99_scanf@plt>
-    1408:       8b 55 d8                mov    -0x28(%rbp),%edx
-    140b:       8b 45 dc                mov    -0x24(%rbp),%eax
-    140e:       31 d0                   xor    %edx,%eax
-    1410:       89 45 f8                mov    %eax,-0x8(%rbp)
-    1413:       8b 55 f8                mov    -0x8(%rbp),%edx
-    1416:       48 8d 45 cf             lea    -0x31(%rbp),%rax
+    1403:       e8 78 fd ff ff          call   1180 <__isoc99_scanf@plt> # scanf 포맷, 사용자 입력 저장
+    1408:       8b 55 d8                mov    -0x28(%rbp),%edx          # 랜덤값
+    140b:       8b 45 dc                mov    -0x24(%rbp),%eax          # 사용자 입력값
+    140e:       31 d0                   xor    %edx,%eax                 # 사용자 입력 XOR 랜덤값
+    1410:       89 45 f8                mov    %eax,-0x8(%rbp)           # 결과 저장
+    1413:       8b 55 f8                mov    -0x8(%rbp),%edx           # xor 결과
+    1416:       48 8d 45 cf             lea    -0x31(%rbp),%rax          # 출력 버퍼 주소
     141a:       89 d1                   mov    %edx,%ecx
-    141c:       48 8d 15 14 0c 00 00    lea    0xc14(%rip),%rdx        # 2037 <_IO_stdin_used+0x37>
-    1423:       be 09 00 00 00          mov    $0x9,%esi
-    1428:       48 89 c7                mov    %rax,%rdi
+    141c:       48 8d 15 14 0c 00 00    lea    0xc14(%rip),%rdx        # 2037 <_IO_stdin_used+0x37> # 포맷 문자열 주소
+    1423:       be 09 00 00 00          mov    $0x9,%esi                 # 크기 9
+    1428:       48 89 c7                mov    %rax,%rdi                 # 출력 버퍼 주소
     142b:       b8 00 00 00 00          mov    $0x0,%eax
-    1430:       e8 db fc ff ff          call   1110 <snprintf@plt>
-    1435:       c7 45 fc 00 00 00 00    movl   $0x0,-0x4(%rbp)
-    143c:       eb 1c                   jmp    145a <main+0x11b>
+    1430:       e8 db fc ff ff          call   1110 <snprintf@plt>       # snprintf(buf, size, format, ...)
+    1435:       c7 45 fc 00 00 00 00    movl   $0x0,-0x4(%rbp)           # i = 0
+    143c:       eb 1c                   jmp    145a <main+0x11b>         # 반복 시작
     143e:       b8 07 00 00 00          mov    $0x7,%eax
     1443:       2b 45 fc                sub    -0x4(%rbp),%eax
     1446:       48 98                   cltq
@@ -685,3 +731,130 @@ Disassembly of section .fini:
     14d8:       48 83 c4 08             add    $0x8,%rsp
     14dc:       c3                      ret
 ```
+범용 레지스터
+    rax (Register Accumulator eXtended)
+    산술 연산, 함수 리턴 값 저장, 시스템 콜 번호 전달 등
+    예시: mov %rax, %rdi — rax 값을 rdi로 복사
+
+    rbx (Register Base eXtended)
+    루프 인덱스, 데이터 보존용 (callee-saved), 간접 주소 계산 등
+    예시: 루프나 배열 계산 시 사용됨 (이 코드에는 없음)
+
+    rcx (Register Counter eXtended)
+    루프 카운터, 문자열 처리 루틴, 함수 4번째 인자
+    예시: mov %edx, %ecx — edx 값을 ecx로 복사
+
+    rdx (Register Data eXtended)
+    산술 연산 보조, 함수 3번째 인자 전달, 시스템 콜 인자
+    예시: mov %rsp, %rdx — 스택 포인터를 rdx에 복사
+
+    r8 (Register 8)
+    함수 5번째 인자
+    예시: xor %r8d, %r8d — r8을 0으로 초기화
+
+    r9 (Register 9)
+    함수 6번째 인자
+    예시: mov %rdx, %r9 — rdx 값을 r9로 복사
+
+포인터 레지스터
+    rbp (Register Base Pointer)
+    현재 함수의 스택 프레임 기준점
+    예시: mov %rsp, %rbp — 함수 진입 시 기준 설정
+
+    rsp (Register Stack Pointer)
+    현재 스택의 최상단 위치를 가리킴
+    예시: and $0xfffffffffffffff0, %rsp — 스택 정렬
+
+    rsi (Register Source Index)
+    문자열 소스 주소, 함수 2번째 인자
+    예시: mov %rax, %rsi — 소스 인자로 설정
+
+    rdi (Register Destination Index)
+    문자열 목적지 주소, 함수 1번째 인자
+    예시: lea 0x180(%rip), %rdi — main 주소를 첫 번째 인자로 전달
+
+어셈 분석하기 빡심!
+
+히드라 툴 설치
+https://github.com/NationalSecurityAgency/ghidra?tab=readme-ov-file 
+https://github.com/NationalSecurityAgency/ghidra/releases
+
+JDK-21 설치
+https://adoptium.net/temurin/releases/?os=any&arch=any&version=21
+
+```bash
+# 리눅스 GUI를 사용할 수 있다면
+sudo apt install openjdk-21-jdk
+readlink -f $(which java)
+/usr/lib/jvm/java-21-openjdk-amd64/bin/java
+
+wget https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_11.4_build/ghidra_11.4_PUBLIC_20250620.zip
+unzip ghidra_11.4_PUBLIC_20250620.zip
+
+./ghidraRun
+
+# 안되면 그냥 Windows에 설치하고 ghidraRun.bat 실행
+ghidraRun.bat
+```
+
+히드라가 리버싱한 C 코드
+
+```c
+
+undefined8 main(void)
+{
+  int iVar1;
+  char local_42 [9];     // 사용자 입력 XOR 결과를 뒤집은 문자열 저장용
+  char local_39 [9];     // XOR 결과를 8자리 hex 문자열로 저장하는 임시 버퍼
+  uint local_30;         // 랜덤값 저장 변수
+  uint local_2c;         // 사용자 입력 저장 변수
+  char *local_28;        // 정답 문자열 포인터 (정적 값: "a0b4c1d7")
+  int local_1c;          // open() 함수가 반환한 파일 디스크립터
+  char *local_18;        // flag 파일에서 읽어온 내용을 저장하는 메모리 포인터
+  uint local_10;         // XOR 결과 저장 변수
+  int local_c;           // for 루프용 인덱스 변수
+
+  local_2c = 0;                // 사용자 입력 초기화
+  local_30 = 0;                // 랜덤값 초기화
+  local_10 = 0;                // XOR 결과 초기화
+
+  initialize();                // stdin/stdout 버퍼 설정 (setvbuf)
+
+  local_18 = (char *)malloc(0x45);  // 0x45 바이트(69바이트) 메모리 할당 → flag 저장용
+
+  local_1c = open("./flag",0);      // flag 파일 열기 (읽기 전용)
+  read(local_1c, local_18, 0x45);   // flag 내용을 local_18에 읽어오기
+  close(local_1c);                 // 파일 닫기
+
+  get_rand_num(&local_30);         // /dev/urandom에서 랜덤값 읽어서 local_30에 저장
+
+  printf("Random number: %#x\n", (ulong)local_30);  // 랜덤값 출력
+  printf("Input? ");                                // 사용자에게 입력 요청
+
+  __isoc99_scanf(&DAT_00102034, &local_2c);         // 정수 입력 받기 → local_2c에 저장
+
+  local_10 = local_2c ^ local_30;   // 입력값 XOR 랜덤값(입력값의 각 비트와 출력 값의 각 비트가 같으면 0 다르면 1) → local_10에 저장
+
+  snprintf(local_39, 9, "%08x", (ulong)local_10);  // XOR 결과를 8자리 hex 문자열로 저장
+
+  for (local_c = 0; local_c < 8; local_c = local_c + 1) {
+    local_42[local_c] = local_39[7 - local_c];     // 문자열을 역순으로 뒤집어서 local_42에 저장
+  }
+
+  printf("Result: %s\n", local_42);    // 뒤집은 결과 출력
+
+  local_28 = "a0b4c1d7";               // 정답 문자열
+
+  iVar1 = strcmp(local_42, "a0b4c1d7"); // 뒤집은 결과가 정답 문자열과 같은지 비교
+
+  if (iVar1 == 0) {                    // 정답일 경우
+    puts("Congrats!");                 // 축하 메시지 출력
+    puts(local_18);                    // flag 파일의 내용을 출력
+  } else {                             // 오답일 경우
+    puts("Try again");                 // 재시도 메시지 출력
+  }
+
+  return 0;                            // 종료
+}
+```
+
